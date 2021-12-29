@@ -45,13 +45,16 @@ class InstallMotorApiConfigs < ActiveRecord::Migration[7.0]
 
     add_column :motor_forms, :api_config_name, :string
 
+    MotorForm.reset_column_information
+
     MotorForm.all.each do |form|
       if form.api_path.starts_with?('http')
         url = form.api_path[%r{\Ahttps?://[^/]+}]
 
         form.preferences[:default_values_api_path]&.delete(url)
+        form.preferences[:default_values_api_path]&.sub(/\A\/?/, '/')
         form.update!(api_config_name: MotorApiConfig.find_or_create_by!(name: url, url: url).name,
-                     api_path: form.api_path.delete(url))
+                     api_path: form.api_path.delete(url).sub(/\A\/?/, '/'))
       else
         form.update!(api_config_name: MotorApiConfig.find_or_create_by!(name: 'origin', url: '/').name)
       end
